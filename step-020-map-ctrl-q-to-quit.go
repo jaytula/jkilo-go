@@ -1,5 +1,8 @@
 package main
 
+// TODO: Last chapter we saw that the Ctrl key combined with the alphabetic keys seemed to map to bytes 1–26. We can use this to detect Ctrl key combinations and map them to different operations in our editor. We’ll start by mapping Ctrl-Q to the quit operation.
+
+
 import (
 	"fmt"
 	"os"
