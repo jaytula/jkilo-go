@@ -45,7 +45,7 @@ func main() {
 				fmt.Printf("%d\r\n", char)
 			}
 		}
-		if b[0] == 'q' {
+		if b[0] == 'q'&0x1f {
 			break
 		}
 	}
