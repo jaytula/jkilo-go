@@ -29,10 +29,50 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 
 	"golang.org/x/term"
 )
+
+// die panics with the given error.
+// A panic will unwind the stack, run deferred functions, and exit with a stack trace.
+func die(err error) {
+	panic(err)
+}
+
+// editorReadKey reads a single keypress from stdin and returns it.
+func editorReadKey() (byte, error) {
+	var b []byte = make([]byte, 1)
+	n, err := os.Stdin.Read(b)
+	if err != nil {
+		return 0, err // Propagate error, including EOF.
+	}
+	if n != 1 {
+		// This should not happen with a blocking read, but handle it defensively.
+		return 0, io.EOF
+	}
+	return b[0], nil
+}
+
+// editorProcessKeypress waits for a keypress and handles it.
+// It returns false if the editor should exit.
+func editorProcessKeypress() bool {
+	char, err := editorReadKey()
+	if err != nil {
+		if err == io.EOF {
+			return false // Exit on EOF (e.g., Ctrl-D).
+		}
+		die(fmt.Errorf("read error: %w", err))
+	}
+
+	switch char {
+	case 'q' & 0x1f: // Ctrl-Q
+		return false // Signal to exit.
+	}
+
+	return true // Signal to continue.
+}
 
 func main() {
 	// Get the file descriptor for stdin
@@ -41,8 +81,7 @@ func main() {
 	// Make a copy of the original terminal state
 	oldState, err := term.GetState(fd)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error getting terminal state: %v\n", err)
-		os.Exit(1)
+		die(fmt.Errorf("getting terminal state: %w", err))
 	}
 	// Restore the terminal state on exit
 	defer term.Restore(fd, oldState)
@@ -50,26 +89,11 @@ func main() {
 	// Put the terminal into raw mode
 	_, err = term.MakeRaw(fd)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error putting terminal in raw mode: %v\n", err)
-		os.Exit(1)
+		die(fmt.Errorf("putting terminal in raw mode: %w", err))
 	}
 
-	// Read from stdin in a loop
-	var b []byte = make([]byte, 1)
 	for {
-		n, err := os.Stdin.Read(b)
-		if err != nil {
-			break
-		}
-		if n > 0 {
-			char := b[0]
-			if char >= 32 && char <= 126 { // Printable ASCII characters
-				fmt.Printf("%d ('%c')\r\n", char, char)
-			} else {
-				fmt.Printf("%d\r\n", char)
-			}
-		}
-		if b[0] == 'q'&0x1f {
+		if !editorProcessKeypress() {
 			break
 		}
 	}
