@@ -44,6 +44,17 @@ func editorReadKey() (byte, error) {
 	return b[0], nil
 }
 
+// editorRefreshScreen clears the terminal screen.
+func editorRefreshScreen() {
+	// ANSI escape sequence to clear the entire screen.
+	// "\x1b" is the escape character.
+	// "[2J" clears the entire screen.
+	_, err := os.Stdout.Write([]byte("\x1b[2J"))
+	if err != nil {
+		die(fmt.Errorf("writing to stdout: %w", err))
+	}
+}
+
 // editorProcessKeypress waits for a keypress and handles it.
 // It returns false if the editor should exit.
 func editorProcessKeypress() bool {
@@ -82,6 +93,7 @@ func main() {
 	}
 
 	for {
+		editorRefreshScreen() // Clear the screen at the beginning of each loop iteration
 		if !editorProcessKeypress() {
 			break
 		}
