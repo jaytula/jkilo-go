@@ -11,6 +11,21 @@ import (
 // die panics with the given error.
 // A panic will unwind the stack, run deferred functions, and exit with a stack trace.
 func die(err error) {
+	// ANSI escape sequence to clear the entire screen.
+	// "\x1b" is the escape character.
+	// "[2J" clears the entire screen.
+	_, err2 := os.Stdout.Write([]byte("\x1b[2J"))
+	if err2 != nil {
+		die(fmt.Errorf("writing to stdout: %w", err2))
+	}
+
+	// ANSI escape sequence to reposition the cursor to the top-left corner.
+	// "\x1b" is the escape character.
+	// "[H" repositions the cursor to row 1, column 1.
+	_, err2 = os.Stdout.Write([]byte("\x1b[H"))
+	if err2 != nil {
+		die(fmt.Errorf("writing to stdout: %w", err2))
+	}
 	panic(err)
 }
 
@@ -60,6 +75,21 @@ func editorProcessKeypress() bool {
 
 	switch char {
 	case 'q' & 0x1f: // Ctrl-Q
+		// ANSI escape sequence to clear the entire screen.
+		// "\x1b" is the escape character.
+		// "[2J" clears the entire screen.
+		_, err2 := os.Stdout.Write([]byte("\x1b[2J"))
+		if err2 != nil {
+			die(fmt.Errorf("writing to stdout: %w", err2))
+		}
+
+		// ANSI escape sequence to reposition the cursor to the top-left corner.
+		// "\x1b" is the escape character.
+		// "[H" repositions the cursor to row 1, column 1.
+		_, err2 = os.Stdout.Write([]byte("\x1b[H"))
+		if err2 != nil {
+			die(fmt.Errorf("writing to stdout: %w", err2))
+		}
 		return false // Signal to exit.
 	}
 
