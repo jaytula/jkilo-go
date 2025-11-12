@@ -1,18 +1,5 @@
 package main
 
-// void editorDrawRows() {
-//   int y;
-//   for (y = 0; y < 24; y++) {
-//     write(STDOUT_FILENO, "~\r\n", 3);
-//   }
-// }
-// void editorRefreshScreen() {
-//   write(STDOUT_FILENO, "\x1b[2J", 4);
-//   write(STDOUT_FILENO, "\x1b[H", 3);
-//   editorDrawRows();
-//   write(STDOUT_FILENO, "\x1b[H", 3);
-// }
-
 import (
 	"fmt"
 	"io"
@@ -21,42 +8,17 @@ import (
 	"golang.org/x/term"
 )
 
-// die panics with the given error.
-// A panic will unwind the stack, run deferred functions, and exit with a stack trace.
-func die(err error) {
-	// ANSI escape sequence to clear the entire screen.
-	// "\x1b" is the escape character.
-	// "[2J" clears the entire screen.
-	_, err2 := os.Stdout.Write([]byte("\x1b[2J"))
-	if err2 != nil {
-		die(fmt.Errorf("writing to stdout: %w", err2))
+// editorDrawRows draws 24 rows of tildes.
+func editorDrawRows() {
+	for y := 0; y < 24; y++ {
+		_, err := os.Stdout.Write([]byte("~\r\n"))
+		if err != nil {
+			die(fmt.Errorf("writing to stdout: %w", err))
+		}
 	}
-
-	// ANSI escape sequence to reposition the cursor to the top-left corner.
-	// "\x1b" is the escape character.
-	// "[H" repositions the cursor to row 1, column 1.
-	_, err2 = os.Stdout.Write([]byte("\x1b[H"))
-	if err2 != nil {
-		die(fmt.Errorf("writing to stdout: %w", err2))
-	}
-	panic(err)
 }
 
-// editorReadKey reads a single keypress from stdin and returns it.
-func editorReadKey() (byte, error) {
-	var b []byte = make([]byte, 1)
-	n, err := os.Stdin.Read(b)
-	if err != nil {
-		return 0, err // Propagate error, including EOF.
-	}
-	if n != 1 {
-		// This should not happen with a blocking read, but handle it defensively.
-		return 0, io.EOF
-	}
-	return b[0], nil
-}
-
-// editorRefreshScreen clears the terminal screen.
+// editorRefreshScreen clears the terminal screen and draws tildes.
 func editorRefreshScreen() {
 	// ANSI escape sequence to clear the entire screen.
 	// "\x1b" is the escape character.
@@ -65,6 +27,16 @@ func editorRefreshScreen() {
 	if err != nil {
 		die(fmt.Errorf("writing to stdout: %w", err))
 	}
+
+	// ANSI escape sequence to reposition the cursor to the top-left corner.
+	// "\x1b" is the escape character.
+	// "[H" repositions the cursor to row 1, column 1.
+	_, err = os.Stdout.Write([]byte("\x1b[H"))
+	if err != nil {
+		die(fmt.Errorf("writing to stdout: %w", err))
+	}
+
+	editorDrawRows()
 
 	// ANSI escape sequence to reposition the cursor to the top-left corner.
 	// "\x1b" is the escape character.
@@ -133,4 +105,40 @@ func main() {
 			break
 		}
 	}
+}
+
+// die panics with the given error.
+// A panic will unwind the stack, run deferred functions, and exit with a stack trace.
+func die(err error) {
+	// ANSI escape sequence to clear the entire screen.
+	// "\x1b" is the escape character.
+	// "[2J" clears the entire screen.
+	_, err2 := os.Stdout.Write([]byte("\x1b[2J"))
+	if err2 != nil {
+		die(fmt.Errorf("writing to stdout: %w", err2))
+	}
+
+	// ANSI escape sequence to reposition the cursor to the top-left corner.
+	// "\x1b" is the escape character.
+	// "[H" repositions the cursor to row 1, column 1.
+	_, err2 = os.Stdout.Write([]byte("\x1b[H"))
+	if err2 != nil {
+		die(fmt.Errorf("writing to stdout: %w", err2))
+	}
+
+	panic(err)
+}
+
+// editorReadKey reads a single keypress from stdin and returns it.
+func editorReadKey() (byte, error) {
+	var b []byte = make([]byte, 1)
+	n, err := os.Stdin.Read(b)
+	if err != nil {
+		return 0, err // Propagate error, including EOF.
+	}
+	if n != 1 {
+		// This should not happen with a blocking read, but handle it defensively.
+		return 0, io.EOF
+	}
+	return b[0], nil
 }
