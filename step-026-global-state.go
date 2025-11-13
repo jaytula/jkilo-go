@@ -8,9 +8,25 @@ import (
 	"golang.org/x/term"
 )
 
-// editorDrawRows draws 24 rows of tildes.
+// editorConfig stores the editor's configuration, including terminal size.
+var editorConfig struct {
+	termWidth  int
+	termHeight int
+}
+
+// initEditor initializes the editor configuration.
+func initEditor() {
+	width, height, err := term.GetSize(int(os.Stdout.Fd()))
+	if err != nil {
+		die(fmt.Errorf("getting terminal size: %w", err))
+	}
+	editorConfig.termWidth = width
+	editorConfig.termHeight = height
+}
+
+// editorDrawRows draws rows of tildes based on the terminal height.
 func editorDrawRows() {
-	for y := 0; y < 24; y++ {
+	for y := 0; y < editorConfig.termHeight; y++ {
 		_, err := os.Stdout.Write([]byte("~\r\n"))
 		if err != nil {
 			die(fmt.Errorf("writing to stdout: %w", err))
@@ -99,6 +115,8 @@ func main() {
 		die(fmt.Errorf("putting terminal in raw mode: %w", err))
 	}
 
+	initEditor()
+
 	for {
 		editorRefreshScreen() // Clear the screen at the beginning of each loop iteration
 		if !editorProcessKeypress() {
@@ -115,7 +133,8 @@ func die(err error) {
 	// "[2J" clears the entire screen.
 	_, err2 := os.Stdout.Write([]byte("\x1b[2J"))
 	if err2 != nil {
-		die(fmt.Errorf("writing to stdout: %w", err2))
+		// If we can't clear the screen, just print the original error
+		fmt.Println("Error writing to stdout:", err2)
 	}
 
 	// ANSI escape sequence to reposition the cursor to the top-left corner.
@@ -123,7 +142,7 @@ func die(err error) {
 	// "[H" repositions the cursor to row 1, column 1.
 	_, err2 = os.Stdout.Write([]byte("\x1b[H"))
 	if err2 != nil {
-		die(fmt.Errorf("writing to stdout: %w", err2))
+		fmt.Println("Error writing to stdout:", err2)
 	}
 
 	panic(err)
