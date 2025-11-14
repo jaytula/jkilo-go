@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"os"
@@ -22,6 +23,17 @@ func initEditor() {
 	}
 	editorConfig.termWidth = width
 	editorConfig.termHeight = height
+
+	rows, cols, err := getCursorPosition()
+	if err != nil {
+		// Don't die, just print an error. This is for demonstration.
+		fmt.Printf("Could not get cursor position: %v\r\n", err)
+	} else {
+		fmt.Printf("Initial cursor position: rows %d, cols %d\r\n", rows, cols)
+	}
+
+	fmt.Printf("Press any key to continue...\r\n")
+	editorReadKey() // Wait for a keypress
 }
 
 // editorDrawRows draws rows of tildes based on the terminal height.
@@ -32,6 +44,34 @@ func editorDrawRows() {
 			die(fmt.Errorf("writing to stdout: %w", err))
 		}
 	}
+}
+
+// getCursorPosition gets the current cursor position from the terminal.
+func getCursorPosition() (int, int, error) {
+	// Request cursor position.
+	_, err := os.Stdout.Write([]byte("\x1b[6n"))
+	if err != nil {
+		return 0, 0, err
+	}
+
+	reader := bufio.NewReader(os.Stdin)
+	response, err := reader.ReadString('R')
+	if err != nil {
+		return 0, 0, err
+	}
+
+	// Response should be in format `\x1b[<rows>;<cols>R`
+	if len(response) < 4 || response[0] != '\x1b' || response[1] != '[' {
+		return 0, 0, fmt.Errorf("invalid response format: %q", response)
+	}
+
+	var rows, cols int
+	_, err = fmt.Sscanf(response[2:len(response)-1], "%d;%d", &rows, &cols)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	return rows, cols, nil
 }
 
 // editorRefreshScreen clears the terminal screen and draws tildes.
